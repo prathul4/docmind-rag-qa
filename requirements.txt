@@ -1,0 +1,25 @@
+# --- Core RAG framework (pinned to the pre-1.0 langchain line for stability) ---
+langchain==0.3.27
+langchain-community==0.3.27
+langchain-google-genai==2.1.0
+
+# --- Vector store (similarity search over embeddings) ---
+faiss-cpu
+
+# --- Document loading ---
+pypdf
+
+# --- Web UI ---
+streamlit
+
+# --- Config / secrets ---
+python-dotenv
+
+# --- Automated RAG evaluation (faithfulness, relevance, precision/recall) ---
+ragas==0.2.15
+datasets
+
+# --- Token counting for cost/latency logging ---
+tiktoken
+
+pandas
