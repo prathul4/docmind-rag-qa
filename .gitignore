@@ -5,3 +5,6 @@ __pycache__/
 faiss_index/
 *.log
 query_log.jsonl
+eval/dataset_cache_*.json
+eval/*_run*.log
+eval/benchmark_run.log

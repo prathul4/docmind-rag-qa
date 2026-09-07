@@ -1,0 +1,5 @@
+metric,300tok,500tok,delta_500_minus_300
+faithfulness,1.0,1.0,0.0
+answer_relevancy,0.846,0.85,0.004
+context_precision,0.95,0.842,-0.108
+context_recall,1.0,1.0,0.0
