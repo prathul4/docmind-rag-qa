@@ -20,6 +20,10 @@ Get a free Gemini API key at https://aistudio.google.com/apikey
 # 1. Build the vector index from the PDF (run once, or whenever the PDF changes)
 venv\Scripts\python src\ingest.py
 
+# 1b. Or point it at your own PDF, or a whole folder of PDFs to merge into one index
+venv\Scripts\python src\ingest.py --pdf path\to\your.pdf --tag mydoc
+venv\Scripts\python src\ingest.py --pdf path\to\folder\ --tag mydocs
+
 # 2. Launch the interactive UI
 venv\Scripts\python -m streamlit run src\app.py
 
