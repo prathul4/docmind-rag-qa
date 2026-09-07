@@ -1,17 +1,23 @@
 """
-Ingestion pipeline: PDF -> text -> chunks -> embeddings -> FAISS index on disk.
+Ingestion pipeline: PDF(s) -> text -> chunks -> embeddings -> FAISS index on disk.
 
 This is Step 1 of RAG ("index your documents once, ahead of time"). Run this
-whenever the source PDF changes. Querying (rag_chain.py) then just loads the
+whenever the source PDF(s) change. Querying (rag_chain.py) then just loads the
 pre-built index instead of re-embedding everything on every question.
+
+--pdf accepts either a single PDF file or a directory -- if it's a directory,
+every *.pdf inside it is loaded and merged into one index, so you can ask
+questions across multiple documents at once.
 
 Usage:
     python src/ingest.py
     python src/ingest.py --chunk-size 300 --chunk-overlap 50 --tag 300tok
+    python src/ingest.py --pdf data/my_docs/ --tag my_docs
 """
 
 import argparse
 import time
+from pathlib import Path
 
 import tiktoken
 from langchain_community.document_loaders import PyPDFLoader
@@ -32,11 +38,37 @@ def count_tokens(text: str) -> int:
     return len(_encoding.encode(text))
 
 
+def resolve_pdf_paths(pdf_path) -> list[Path]:
+    """Accepts a single PDF file OR a directory -- returns the list of PDFs to load."""
+    path = Path(pdf_path)
+    if path.is_dir():
+        pdfs = sorted(path.glob("*.pdf"))
+        if not pdfs:
+            raise FileNotFoundError(f"No .pdf files found in directory {path}")
+        return pdfs
+    if not path.exists():
+        raise FileNotFoundError(f"No such file or directory: {path}")
+    return [path]
+
+
 def load_and_split(pdf_path, chunk_size: int, chunk_overlap: int):
-    print(f"Loading {pdf_path} ...")
-    loader = PyPDFLoader(str(pdf_path))
-    pages = loader.load()  # one Document per PDF page, with page-number metadata
-    print(f"  Loaded {len(pages)} page(s).")
+    pdf_paths = resolve_pdf_paths(pdf_path)
+
+    # PyPDFLoader stamps each page's metadata with "source" (the file it came
+    # from) and "page" (page number within that file) automatically. Loading
+    # every PDF into one combined list and splitting them together means the
+    # resulting chunks still know which document they came from, so answers
+    # can cite "which file, which page" even when multiple documents share
+    # one index.
+    pages = []
+    for p in pdf_paths:
+        print(f"Loading {p} ...")
+        loader = PyPDFLoader(str(p))
+        file_pages = loader.load()
+        print(f"  Loaded {len(file_pages)} page(s).")
+        pages.extend(file_pages)
+
+    print(f"Loaded {len(pages)} page(s) total from {len(pdf_paths)} file(s).")
 
     # RecursiveCharacterTextSplitter tries to split on paragraph breaks first,
     # then sentences, then words -- only falling back to a hard character cut
@@ -86,7 +118,8 @@ def build_index(chunks, output_dir):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--pdf", default=str(config.DATA_DIR / "employee_handbook.pdf"))
+    parser.add_argument("--pdf", default=str(config.DATA_DIR / "employee_handbook.pdf"),
+                         help="A single PDF file, or a directory of PDFs to merge into one index")
     parser.add_argument("--chunk-size", type=int, default=config.DEFAULT_CHUNK_SIZE)
     parser.add_argument("--chunk-overlap", type=int, default=config.DEFAULT_CHUNK_OVERLAP)
     parser.add_argument("--tag", default=None, help="Suffix for the index folder name")

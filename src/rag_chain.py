@@ -31,6 +31,13 @@ def count_tokens(text: str) -> int:
     return len(_encoding.encode(text))
 
 
+def _source_name(doc) -> str:
+    """PyPDFLoader stamps metadata['source'] with the full file path; show
+    just the filename so citations stay readable when an index spans
+    multiple documents."""
+    return Path(doc.metadata.get("source", "unknown")).name
+
+
 SYSTEM_PROMPT = """You are DocMind, a question-answering assistant that answers \
 strictly from the provided context excerpts taken from a document.
 
@@ -91,8 +98,8 @@ class DocMindRAG:
                 "answer": "Insufficient context to answer this question.",
                 "sources": [],
                 "retrieved_but_below_threshold": [
-                    {"page": d.metadata.get("page"), "score": round(float(s), 3),
-                     "text": d.page_content[:200]}
+                    {"source": _source_name(d), "page": d.metadata.get("page"),
+                     "score": round(float(s), 3), "text": d.page_content[:200]}
                     for d, s in all_results
                 ],
                 "latency_ms": round(latency_ms, 1),
@@ -117,8 +124,8 @@ class DocMindRAG:
             "question": question,
             "answer": response.content,
             "sources": [
-                {"page": doc.metadata.get("page"), "score": round(float(score), 3),
-                 "text": doc.page_content}
+                {"source": _source_name(doc), "page": doc.metadata.get("page"),
+                 "score": round(float(score), 3), "text": doc.page_content}
                 for doc, score in kept
             ],
             "latency_ms": round(latency_ms, 1),

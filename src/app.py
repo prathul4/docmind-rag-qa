@@ -77,7 +77,7 @@ for result in st.session_state["history"]:
     if result["sources"]:
         with st.expander("Show source chunks used for this answer"):
             for i, src in enumerate(result["sources"], start=1):
-                st.markdown(f"**Source {i}** — page {src['page']} — "
-                             f"relevance score {src['score']:.3f}")
+                st.markdown(f"**Source {i}** — {src.get('source', 'document')}, "
+                             f"page {src['page']} — relevance score {src['score']:.3f}")
                 st.code(src["text"], language=None)
     st.divider()
